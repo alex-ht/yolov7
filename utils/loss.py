@@ -472,7 +472,7 @@ class ComputeLoss:
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 
                 # Classification
-                if self.nc > 1:  # cls loss (only if multiple classes)
+                if True:  # cls loss (only if multiple classes)
                     t = torch.full_like(ps[:, 5:], self.cn, device=device)  # targets
                     t[range(n), tcls[i]] = self.cp
                     #t[t==self.cp] = iou.detach().clamp(0).type(t.dtype)
@@ -611,7 +611,7 @@ class ComputeLossOTA:
 
                 # Classification
                 selected_tcls = targets[i][:, 1].long()
-                if self.nc > 1:  # cls loss (only if multiple classes)
+                if True:  # cls loss (only if multiple classes)
                     t = torch.full_like(ps[:, 5:], self.cn, device=device)  # targets
                     t[range(n), selected_tcls] = self.cp
                     lcls += self.BCEcls(ps[:, 5:], t)  # BCE
@@ -934,7 +934,7 @@ class ComputeLossBinOTA:
 
                 # Classification
                 selected_tcls = targets[i][:, 1].long()
-                if self.nc > 1:  # cls loss (only if multiple classes)
+                if True:  # cls loss (only if multiple classes)
                     t = torch.full_like(ps[:, (1+obj_idx):], self.cn, device=device)  # targets
                     t[range(n), selected_tcls] = self.cp
                     lcls += self.BCEcls(ps[:, (1+obj_idx):], t)  # BCE
@@ -1236,7 +1236,7 @@ class ComputeLossAuxOTA:
 
                 # Classification
                 selected_tcls = targets[i][:, 1].long()
-                if self.nc > 1:  # cls loss (only if multiple classes)
+                if True:  # cls loss (only if multiple classes)
                     t = torch.full_like(ps[:, 5:], self.cn, device=device)  # targets
                     t[range(n), selected_tcls] = self.cp
                     lcls += self.BCEcls(ps[:, 5:], t)  # BCE
@@ -1263,7 +1263,7 @@ class ComputeLossAuxOTA:
 
                 # Classification
                 selected_tcls_aux = targets_aux[i][:, 1].long()
-                if self.nc > 1:  # cls loss (only if multiple classes)
+                if True:  # cls loss (only if multiple classes)
                     t_aux = torch.full_like(ps_aux[:, 5:], self.cn, device=device)  # targets
                     t_aux[range(n_aux), selected_tcls_aux] = self.cp
                     lcls += 0.25 * self.BCEcls(ps_aux[:, 5:], t_aux)  # BCE
