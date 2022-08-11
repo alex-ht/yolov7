@@ -34,6 +34,10 @@ from utils.loss import ComputeLoss, ComputeLossOTA
 from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first, is_parallel
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
+# oneAI
+import AIMaker as ai
+import mlflow
+from utils.mlflow_logging.utils import log_parameters, log_model
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +46,8 @@ def train(hyp, opt, device, tb_writer=None):
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
     save_dir, epochs, batch_size, total_batch_size, weights, rank, freeze = \
         Path(opt.save_dir), opt.epochs, opt.batch_size, opt.total_batch_size, opt.weights, opt.global_rank, opt.freeze
+    # oneAI
+    log_parameters(hyp, opt)
 
     # Directories
     wdir = save_dir / 'weights'
@@ -439,6 +445,7 @@ def train(hyp, opt, device, tb_writer=None):
             for x, tag in zip(list(mloss[:-1]) + list(results) + lr, tags):
                 if tb_writer:
                     tb_writer.add_scalar(tag, x, epoch)  # tensorboard
+                    mlflow.log_metric(tag.replace(':', '-'), x if type(x) is float else x.item())
                 if wandb_logger.wandb:
                     wandb_logger.log({tag: x})  # W&B
 
@@ -463,6 +470,9 @@ def train(hyp, opt, device, tb_writer=None):
                 torch.save(ckpt, last)
                 if best_fitness == fi:
                     torch.save(ckpt, best)
+                    # oneAI
+                    log_model(ckpt['model'], opt, epoch, fi, best_model=True)
+                    ai.sendUpdateRequest(fi)
                 if (best_fitness == fi) and (epoch >= 200):
                     torch.save(ckpt, wdir / 'best_{:03d}.pt'.format(epoch))
                 if epoch == 0:
@@ -610,7 +620,16 @@ if __name__ == '__main__':
             prefix = colorstr('tensorboard: ')
             logger.info(f"{prefix}Start with 'tensorboard --logdir {opt.project}', view at http://localhost:6006/")
             tb_writer = SummaryWriter(opt.save_dir)  # Tensorboard
+        mlflow.start_run()
         train(hyp, opt, device, tb_writer)
+        # oneAI
+        print("Uploading TensorBoard events as a run artifact...")
+        mlflow.log_artifacts(opt.save_dir, artifact_path="events")
+        print(
+            "\nLaunch TensorBoard with:\n\ntensorboard --logdir=%s"
+            % os.path.join(mlflow.get_artifact_uri(), "events")
+        )
+        mlflow.end_run()
 
     # Evolve hyperparameters (optional)
     else:
