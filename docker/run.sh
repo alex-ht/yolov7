@@ -1,13 +1,11 @@
 #!/bin/bash
-echo "INPUT=$INPUT"
-echo "OUTPUT=$OUTPUT"
-
+set -e
 [ -d data ] && rm -rf data && echo "clean data/"
 tar xf $INPUT/data.tar
 trap "rm -rf data" EXIT
 
-find $(pwd)/data/train -iname "*g" > $OUTPUT/train.txt
-find $(pwd)/data/valid -iname "*g" > $OUTPUT/valid.txt
+find $(pwd)/data/train -iname "*g" | sort > $OUTPUT/train.txt
+find $(pwd)/data/valid -iname "*g" | sort > $OUTPUT/valid.txt
 
 echo "train: $OUTPUT/train.txt" >  $OUTPUT/small_lp.yaml
 echo "val: $OUTPUT/valid.txt"   >> $OUTPUT/small_lp.yaml
@@ -26,6 +24,7 @@ python /yolov7/train.py \
   --name $NAME \
   --hyp $INPUT/$HYP \
   --project $OUTPUT \
-  --epochs ${EPOCHS}
+  --epochs ${EPOCHS} \
+  --cache-images
 
 exit 0
